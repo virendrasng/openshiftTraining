@@ -1,0 +1,48 @@
+https://hub.docker.com/
+docker run -it update
+docker images | grep ubuntu
+docker ps
+docker pull centos
+docker search virdocsng
+
+docker search ubuntu
+
+
+Installation od docker on centos - docker ce centos
+
+yum install -y yum-utils device-mapper-persistent-data lvm2
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+yum-config-manager --enable docker-ce-nightly
+yum install docker-ce docker-ce-cli containerd.io
+
+cat /etc/redhat-release
+cat /etc/os-release
+
+systemctl start docker
+
+docker run -it -d ubuntu
+exit to exit from docker container.
+
+docker ps -a
+docker container ls -a
+
+[root@localhost ~]# docker run -it -d ubuntu  -> to run in background.
+412db446b779e09367171ab50b577ebd951caa436195117be97af5da274ed913
+[root@localhost ~]# 
+[root@localhost ~]# docker attach 412db446b779e09367171ab50b577ebd951caa436195117be97af5da274ed913
+root@412db446b779:/# 
+
+docker container -h
+
+docker remove 64f4ac7b73a91a2870d635bd75dd1282a20144fea9068794b905b84372ebd549
+
+OPENSHIFT OKT
+---------------
+oc get events
+
+oc get projects
+oc new projects
+oc projects
+oc get pods
+OUAY is podman's registry
+oc describe pod pod-name
