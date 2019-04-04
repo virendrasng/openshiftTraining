@@ -1,0 +1,174 @@
+https://shrib.com/#intsolday2
+https://docs.docker.com/install/linux/docker-ee/centos/ - yum remove docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinu docker-engine
+
+yum remove docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
+
+hostnamectl set-hostname devilman.example.com
+yum remove docker-ce-cli.x86
+
+Now install openshift (cloud instalation on centos)
+---------------------------------------------------
+on RedHat enable epel, it is not required on CentOs as Centos provides things from its repository.
+google - how to enable epel for rh7 for https://www.tecmint.com/how-to-enable-epel-repository-for-rhel-centos-6-5/
+epel provides some packages during installation.
+now run commands -
+wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+rpm -ivh epel-release-latest-7.noarch.rpm
+yum update or if failing then run yum repolist
+epel part done on Redhat.
+
+SSH - 
+------
+Create Password lss login
+--------------------------
+(1 node cluster)
+[root@devilman ~]# ssh-keygen
+Generating public/private rsa key pair.
+Enter file in which to save the key (/root/.ssh/id_rsa): 
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again: 
+Your identification has been saved in /root/.ssh/id_rsa.
+Your public key has been saved in /root/.ssh/id_rsa.pub.
+The key fingerprint is:
+SHA256:wIQbVaupBHWq3u+PjJE4HMHZ+o+8KhHVgdLzVyBGrkc root@devilman.example.com
+The key's randomart image is:
++---[RSA 2048]----+
+| . +*+=o.        |
+|..=*+*  ..       |ssh-copy-id 
+| o=oEoo..        |
+|.  Bo .+         |
+| .= o.o S        |
+|.o B o           |
+| .= *            |
+|.  o B .         |
+| ...=o*..        |
++----[SHA256]-----+
+[root@devilman ~]# 
+[root@devilman ~]# ssh-copy-id devilman.example.com
+/usr/bin/ssh-copy-id: INFO: Source of key(s) to be installed: "/root/.ssh/id_rsa.pub"
+The authenticity of host 'devilman.example.com (fe80::da81:2c2b:d24d:e8b1%eno1)' can't be established.
+ECDSA key fingerprint is SHA256:S83Q0LuPGtNYxMbcd9ycw3kk5mB/ihZvNqUHnrMIP2U.
+ECDSA key fingerprint is MD5:35:a1:68:1a:e8:9e:d1:eb:17:61:03:c5:17:19:10:b6.
+Are you sure you want to continue connecting (yes/no)? yes
+/usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s), to filter out any that are already installed
+/usr/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed -- if you are prompted now it is to install the new keys
+root@devilman.example.com's password: 
+
+Number of key(s) added: 1
+
+Now try logging into the machine, with:   "ssh 'devilman.example.com'"
+and check to make sure that only the key(s) you wanted were added.
+
+[root@devilman ~]# ssh devilman.example.com
+then 'exit' pr ctrl D
+Now install packages required by OKD.
+[root@devilman ~]# yum install -y wget git net-tools bind-utils yum-utils iptables-services bridge-utils bash-completion sos psacct
+On redhat it wont work. So work on Centos.
+
+[root@devilman ~]# yum install kexec-tools
+
+For ansible activate epel on centos.
+
+Atomic is not required but use ansible 4 it activate epel.
+yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+sed -i -e "s/^enabled=1/enabled=0/" /etc/yum.repos.d/epel.repo
+yum -y --enablerepo=epel install ansible pyOpenSSL
+    # cd ~
+            # git clone https://github.com/openshift/openshift-ansible
+            # cd openshift-ansible
+            # git checkout release-3.11
+
+Installing Docker
+
+At this point, install Docker on all master and node hosts. This allows you to configure your Docker storage options before you install OKD.
+	
+
+The cluster installation process automatically modifies the /etc/sysconfig/docker file.
+For RHEL 7 (for centos also 100%) systems:
+
+    Install Docker 1.13:
+
+    # yum install docker-1.13.1
+
+    Verify that version 1.13 was installed:
+
+    # rpm -V docker-1.13.1
+    # docker version
+Start or restart Docker.
+
+    If Docker has never run on the host, enable and start the service, then verify that it is running:
+
+    # systemctl enable docker
+    # systemctl start docker
+    # systemctl is-active docker
+
+
+
+INVENTORY FILE VARIABLES: 
+       https://docs.okd.io/3.11/install/configuring_inventory_file.html
+
+- htpasswd_auth - chck on it
+
+https://docs.okd.io/3.11/install/configuring_inventory_file.html
+
+[root@devilman openshift-ansible]# vi /etc/ansible/hosts
+
+append beow 
+[OSEv3:children]
+masters
+nodes
+etcd
+ 
+# Set variables common for all OSEv3 hosts
+[OSEv3:vars]
+# SSH user, this user should allow ssh based auth without requiring a password
+ansible_ssh_user=root
+ 
+# If ansible_ssh_user is not root, ansible_become must be set to true
+#ansible_become=true
+ openshift_disable_check=memory_availability,disk_availability,docker_image_availability,package_availability
+openshift_deployment_type=origin
+ 
+# uncomment the following to enable htpasswd authentication; defaults to AllowAllPasswordIdentityProvider
+#openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider'}]
+ 
+# host group for masters
+[masters]
+newera.example.com
+ 
+# host group for etcd
+[etcd]
+newera.example.com
+ 
+# host group for nodes, includes region info
+[nodes]
+newera.example.com openshift_node_group_name='node-config-all-in-one's
+-----------------------------
+
+mahe domain name changes and uncomment -
+openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider'}]
+To inform all nodes in one machine - devilman.example.com openshift_node_group_name='node-config-all-in-one'
+[root@devilman playbooks]# ansible-playbook -i /etc/ansible/hosts prerequisites.yml
+[root@devilman playbooks]# ansible-playbook -i /etc/ansible/hosts deploy_cluster.yml
+systemctl stop firewalld (might be needed)
+
+[root@devilman bin]# pwd
+/usr/local/bin
+[root@devilman bin]# master-logs api api
+
+After oSH installation -
+-------------------------
+oc -h
+oc get nodes
+oc get projects - lists running projects
+oc whoami
+oc new-project testing
+oc create user jack
+oc get users
+sudo cd /etc/origin
+htpasswd -h
+htpasswd -b htpasswd jack jack
+htpasswd is used here because it is given in the beginning.
+oc login -u jack -p jack
+oc whoami -> jack
+oc projects
