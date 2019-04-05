@@ -1,0 +1,239 @@
+Day 3
+------
+Google developed Kubernates.
+penshift installation doesnot face repo issue on RPM based OS (Red Hat, Fedora, CentOs).
+
+# kubectl get pods / users / dc
+Zombie process - Dead process that eats resources. To kill it kill its parent process. Use ps | grep to find it.
+
+https://github.com/neoisone
+rushil1234@gmail.com/ 9024027165
+
+DMASK
+While having problem during OKD installation may use below command -
+systemctl stop dbus
+systemctl start dbus
+systemctl restart dnsmasq.service
+------------------
+
+-------------------
+Give cluster admin role
+
+[root@devilman ~]# oc login -u system:admin
+Logged into "https://devilman.example.com:8443" as "system:admin" using existing credentials.
+
+You have access to the following projects and can switch between them with 'oc project <projectname>':
+
+    arvindproj
+   ...
+    nishant
+  * one
+    openshift
+    openshift-ansible-service-broker
+...
+
+Using project "one".
+[root@devilman ~]# oc adm policy add-role-to-user cluster-admin virendra 
+role "cluster-admin" added: "virendra"
+[root@devilman ~]# 
+
+oc adm policy add-cluster-role-to-user cluster-admin virendra 
+-------------
+
+to start openshift service
+--------------------------
+
+OpenShift service name -> origin-node.service
+
+os create user virendra
+[root@devilman master]# pwd
+/etc/origin/master
+[root@devilman master]# htpasswd -b htpasswd virendra vir
+[root@devilman ~]# oc whoami
+[root@devilman ~]# oc login -u virendra -p vir
+[root@devilman ~]# oc whoami
+
+virendra
+
+hosts -
+--------
+192.168.1.31 devilman.example.com
+192.168.1.31 cakephp-mysql-example-one.router.default.svc.cluster.local
+
+After deployeing cakephp add cakephp-mysql-example-one.router.default.svc.cluster.local in hosts.
+On OKD web cosole click on Application >> routes.
+
+To ssh cakephp etc container use - rsh
+in ui terminal is shell.
+
+oc get svc (it is service)
+[root@devilman ~]# oc describe svc cakephp-mysql-example
+Name:              cakephp-mysql-example
+Namespace:         one
+Labels:            app=cakephp-mysql-example
+                   template=cakephp-mysql-example
+                   template.openshift.io/template-instance-owner=ca1db04c-5763-11e9-8f52-202564750cd3
+Annotations:       description=Exposes and load balances the application pods
+                   service.alpha.openshift.io/dependencies=[{"name": "mysql", "kind": "Service"}]
+Selector:          name=cakephp-mysql-example
+Type:              ClusterIP
+IP:                172.30.147.182
+Port:              web  8080/TCP
+TargetPort:        8080/TCP
+Endpoints:         10.128.0.173:8080
+Session Affinity:  None
+Events:            <none>
+[root@devilman ~]#
+--------------------------------------------------------------------------------------
+
+CI/CD
+--------
+hi
+
+# oc create serviceaccount jenkins
+# oc new-project dev --display-name="Tasks - Dev"
+# oc new-project stage --display-name="Tasks - Stage"
+# oc new-project cicd --display-name="CI/CD"
+# oc policy add-role-to-user edit system:serviceaccount:cicd:jenkins -n dev
+# oc policy add-role-to-user edit system:serviceaccount:cicd:jenkins -n stage
+# git clone https://github.com/OpenShiftDemos/openshift-cd-demo.git
+# cd openshift-cd-demo/
+# oc create -f cicd-template.yaml 
+# oc new-app --template=cicd
+
+--> create account in in your gog pod and then login with the account and migrate the sample git repo.(https://github.com/OpenShiftDemos/openshift-tasks.git) into that. gog pod.
+--> after that go to jenkins pod and change the configuration :
+
+for example----------snippet--------------------------------------------
+ stages {
+    stage('Build App') {
+      steps {
+        git branch: 'master', url: 'https://github.com/OpenShiftDemos/openshift-tasks.git'
+        sh "${mvnCmd} install -DskipTests=true"
+      }
+    }
+-------------------------------------------------------------------------------------------------------------------------------
+
+
+
+BUILD CONFIG (file name nodejs-sample-pipeline.yml):-
+
+kind: "BuildConfig"
+apiVersion: "v1"
+metadata:
+  name: "nodejs-sample-pipeline"
+spec:
+  strategy:
+    jenkinsPipelineStrategy:
+      jenkinsfile: <pipeline content from below>
+    type: JenkinsPipeline
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------------
+
+def templatePath = 'https://raw.githubusercontent.com/openshift/nodejs-ex/master/openshift/templates/nodejs-mongodb.json' 
+def templateName = 'nodejs-mongodb-example' 
+pipeline {
+  agent {
+    node {
+      label 'nodejs' 
+    }
+  }
+  options {
+    timeout(time: 20, unit: 'MINUTES') 
+  }
+  stages {
+    stage('preamble') {
+        steps {
+            script {
+                openshift.withCluster() {
+                    openshift.withProject() {
+                        echo "Using project: ${openshift.project()}"
+                    }
+                }
+            }
+        }
+    }
+    stage('cleanup') {
+      steps {
+        script {
+            openshift.withCluster() {
+                openshift.withProject() {
+                  openshift.selector("all", [ template : templateName ]).delete() 
+                  if (openshift.selector("secrets", templateName).exists()) { 
+                    openshift.selector("secrets", templateName).delete()
+                  }
+                }
+            }
+        }
+      }
+    }
+    stage('create') {
+      steps {
+        script {
+            openshift.withCluster() {
+                openshift.withProject() {
+                  openshift.newApp(templatePath) 
+                }
+            }
+        }
+      }
+    }
+    stage('build') {
+      steps {
+        script {
+            openshift.withCluster() {
+                openshift.withProject() {
+                  def builds = openshift.selector("bc", templateName).related('builds')
+                  timeout(5) { 
+                    builds.untilEach(1) {
+                      return (it.object().status.phase == "Complete")
+                    }
+                  }
+                }
+            }
+        }
+      }
+    }
+    stage('deploy') {
+      steps {
+        script {
+            openshift.withCluster() {
+                openshift.withProject() {
+                  def rm = openshift.selector("dc", templateName).rollout()
+                  timeout(5) { 
+                    openshift.selector("dc", templateName).related('pods').untilEach(1) {
+                      return (it.object().status.phase == "Running")
+                    }
+                  }
+                }
+            }
+        }
+      }
+    }
+    stage('tag') {
+      steps {
+        script {
+            openshift.withCluster() {
+                openshift.withProject() {
+                  openshift.tag("${templateName}:latest", "${templateName}-staging:latest") 
+                }
+            }
+        }
+      }
+    }
+  }
+}
+
+Then run -
+[root@devilman ~]# oc whoami
+system:admin
+[root@devilman ~]# oc create -f nodejs-sample-pipeline.yaml 
+buildconfig.build.openshift.io/nodejs-sample-pipeline created
+[root@devilman ~]# oc start-build nodejs-sample-pipeline
+build.build.openshift.io/nodejs-sample-pipeline-1 started
+[root@devilman ~]# 
+
