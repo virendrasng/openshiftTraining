@@ -1,75 +1,12 @@
-# This is the default ansible 'hosts' file.
-#
-# It should live in /etc/ansible/hosts
-#
-#   - Comments begin with the '#' character
-#   - Blank lines are ignored
-#   - Groups of hosts are delimited by [header] elements
-#   - You can enter hostnames or ip addresses
-#   - A hostname/ip can be a member of multiple groups
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
 
-# Ex 1: Ungrouped hosts, specify before any group headers.
+192.168.1.31 devilman.example.com
+192.168.1.33 sandeep.example.com
+192.168.1.33 openshift-jee-sample-cakeapp.router.default.svc.cluster.local
+192.168.1.31 cakephp-mysql-example-one.router.default.svc.cluster.local
 
-## green.example.com
-## blue.example.com
-## 192.168.100.1
-## 192.168.100.10
 
-# Ex 2: A collection of hosts belonging to the 'webservers' group
 
-## [webservers]
-## alpha.example.org
-## beta.example.org
-## 192.168.1.100
-## 192.168.1.110
+192.168.1.33		gogs-cicd.router.default.svc.cluster.local 
 
-# If you have multiple hosts following a pattern you can specify
-# them like this:
-
-## www[001:006].example.com
-
-# Ex 3: A collection of database servers in the 'dbservers' group
-
-## [dbservers]
-## 
-## db01.intranet.mydomain.net
-## db02.intranet.mydomain.net
-## 10.25.1.56
-## 10.25.1.57
-
-# Here's another example of host ranges, this time there are no
-# leading 0s:
-
-## db-[99:101]-node.example.com
-
-[OSEv3:children]
-masters
-nodes
-etcd
- 
-# Set variables common for all OSEv3 hosts
-[OSEv3:vars]
-# SSH user, this user should allow ssh based auth without requiring a password
-ansible_ssh_user=root
- 
-# If ansible_ssh_user is not root, ansible_become must be set to true
-#ansible_become=true
- openshift_disable_check=memory_availability,disk_availability,docker_image_availability,package_availability
-openshift_deployment_type=origin
- 
-# uncomment the following to enable htpasswd authentication; defaults to AllowAllPasswordIdentityProvider
-openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider'}]
- 
-# host group for masters
-[masters]
-# newera.example.com
-devilman.example.com
- 
-# host group for etcd
-[etcd]
-# newera.example.com
-devilman.example.com
- 
-# host group for nodes, includes region info
-[nodes]
-devilman.example.com openshift_node_group_name='node-config-all-in-one'
